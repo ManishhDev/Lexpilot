@@ -248,7 +248,7 @@ export default function ChatPage() {
     setConversationHistory(updatedHistory);
 
     try {
-      // Make API call to OpenAI
+      // Make API call to Ollama
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -261,13 +261,17 @@ export default function ChatPage() {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to get response from AI');
+      const data = await response.json();
+      
+      console.log('Chat response:', { status: response.status, success: data.success, hasError: !!data.error });
+
+      if (!response.ok || !data.success) {
+        const errorMessage = data.error || 'Failed to get response from AI';
+        console.error('API Error:', errorMessage);
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (data.message && data.message.content) {
         const agentResponse: Message = {
           id: data.message.id,
           type: "agent",
@@ -283,15 +287,16 @@ export default function ChatPage() {
         // Add agent response to conversation history
         setConversationHistory(prev => [...prev, { role: "assistant", content: data.message.content }]);
       } else {
-        throw new Error(data.error || 'Failed to get response');
+        throw new Error('Invalid response structure from API');
       }
     } catch (error) {
       console.error('Chat error:', error);
       
+      const errorText = error instanceof Error ? error.message : 'An unexpected error occurred';
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "system",
-        content: "I apologize, but I'm having trouble connecting right now. Please try again in a moment.",
+        content: `I apologize, but I encountered an error: ${errorText}. Please check that Ollama is running on http://localhost:11434 and try again.`,
         timestamp: new Date(),
         status: "error",
       };

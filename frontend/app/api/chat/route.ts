@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Ollama configuration
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'mistral';
 
 // Comprehensive system prompts for each agent type
 const AGENT_SYSTEM_PROMPTS = {
@@ -164,23 +163,16 @@ interface ChatMessage {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('Chat API called with Ollama URL:', OLLAMA_BASE_URL);
     const { messages, agentId, context } = await request.json();
-
-    if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json(
-        { error: 'OpenAI API key not configured' },
-        { status: 500 }
-      );
-    }
+    
+    console.log('Request received - Agent ID:', agentId, 'Messages count:', messages.length);
 
     // Get the appropriate system prompt based on agent
     const systemPrompt = AGENT_SYSTEM_PROMPTS[agentId as keyof typeof AGENT_SYSTEM_PROMPTS] || AGENT_SYSTEM_PROMPTS['general-assistant'];
 
     // Build the conversation with system prompt and context
-    const conversationMessages: ChatMessage[] = [
-      {
-        role: 'system',
-        content: `${systemPrompt}
+    const fullSystemPrompt = `${systemPrompt}
 
 BUSINESS CONTEXT:
 ${context || 'No specific business context provided. Please ask for relevant details to provide personalized advice.'}
@@ -193,47 +185,117 @@ CURRENT SESSION:
 - Be proactive in identifying additional compliance or legal needs
 - Offer to help with documentation, templates, or specific procedures
 
-Remember: You are their trusted advisor who cares about their success and compliance. Be thorough, professional, and genuinely helpful.`
-      },
-      ...messages
-    ];
+Remember: You are their trusted advisor who cares about their success and compliance. Be thorough, professional, and genuinely helpful.`;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: conversationMessages,
-      temperature: 0.3,
-      max_tokens: 1000,
-      stream: false,
-    });
-
-    const response = completion.choices[0]?.message?.content;
-
-    if (!response) {
-      return NextResponse.json(
-        { error: 'Failed to generate response' },
-        { status: 500 }
-      );
+    // Convert messages to Ollama format - build a prompt string
+    let prompt = fullSystemPrompt + "\n\n";
+    
+    for (const msg of messages) {
+      if (msg.role === 'user') {
+        prompt += `User: ${msg.content}\n\n`;
+      } else if (msg.role === 'assistant') {
+        prompt += `Assistant: ${msg.content}\n\n`;
+      }
     }
+    
+    prompt += "Assistant:"; // Start the assistant response
 
-    // Generate a unique message ID
-    const messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    console.log('Calling Ollama API with model:', OLLAMA_MODEL);
+    console.log('Prompt length:', prompt.length);
 
-    return NextResponse.json({
-      success: true,
-      message: {
-        id: messageId,
-        type: 'agent',
-        content: response,
-        timestamp: new Date().toISOString(),
-        agentId: agentId
-      },
-      usage: completion.usage
-    });
+    // Call Ollama API with extended timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
+
+    try {
+      const response = await fetch(`${OLLAMA_BASE_URL}/api/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: OLLAMA_MODEL,
+          prompt: prompt,
+          stream: false,
+          temperature: 0.3,
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      console.log('Ollama response status:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Ollama API error:', response.status, errorData);
+        return NextResponse.json(
+          { 
+            success: false,
+            error: `Ollama API error: ${response.statusText}. Status: ${response.status}. Make sure Ollama is running at ${OLLAMA_BASE_URL}` 
+          },
+          { status: response.status }
+        );
+      }
+
+      const data = await response.json();
+      console.log('Ollama response received, response length:', data.response?.length || 0);
+      
+      const agentResponse = data.response?.trim() || '';
+
+      if (!agentResponse) {
+        console.error('Empty response from Ollama');
+        return NextResponse.json(
+          { 
+            success: false,
+            error: 'Failed to generate response from Ollama - empty response' 
+          },
+          { status: 500 }
+        );
+      }
+
+      // Generate a unique message ID
+      const messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      console.log('Sending successful response');
+      return NextResponse.json({
+        success: true,
+        message: {
+          id: messageId,
+          type: 'agent',
+          content: agentResponse,
+          timestamp: new Date().toISOString(),
+          agentId: agentId
+        },
+        usage: {
+          prompt_tokens: data.prompt_eval_count || 0,
+          completion_tokens: data.eval_count || 0,
+          total_tokens: (data.prompt_eval_count || 0) + (data.eval_count || 0),
+        }
+      });
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === 'AbortError') {
+        console.error('Ollama request timeout after 2 minutes');
+        return NextResponse.json(
+          { 
+            success: false,
+            error: 'Ollama request timeout. The model is taking too long to respond. Try again or use a faster model.' 
+          },
+          { status: 504 }
+        );
+      }
+      throw fetchError;
+    }
 
   } catch (error) {
     console.error('Chat API error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to process chat message' },
+      { 
+        success: false,
+        error: `Failed to process chat message: ${errorMessage}. Make sure Ollama is running at ${OLLAMA_BASE_URL}. Details: ${error}` 
+      },
       { status: 500 }
     );
   }

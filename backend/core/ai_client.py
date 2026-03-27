@@ -1,82 +1,71 @@
-"""Unified AI client for OpenAI and Google APIs"""
+"""Unified AI client for Ollama local LLM"""
 from typing import Optional, Any, Dict
-import openai
-import google.generativeai as genai
-from browser_use import Agent
-from browser_use.llm import ChatOpenAI, ChatGoogle
+import httpx
+import asyncio
 from .config import settings
 
 class AIClient:
-    """Unified AI client for multiple providers"""
+    """AI client for Ollama local LLM"""
     
-    def __init__(self, provider: str = "openai"):
-        """Initialize AI client with specified provider"""
+    def __init__(self, provider: str = "ollama"):
+        """Initialize AI client with Ollama"""
         self.provider = provider.lower()
-        self._setup_client()
-        
-    def _setup_client(self):
-        """Set up the appropriate AI client"""
-        if self.provider == "openai":
-            openai.api_key = settings.OPENAI_API_KEY
-            self.model = "gpt-4"  # Default model
-        elif self.provider == "google":
-            genai.configure(api_key=settings.GOOGLE_API_KEY)
-            self.model = genai.GenerativeModel('gemini-pro')
-        else:
-            raise ValueError(f"Unsupported AI provider: {self.provider}")
+        if self.provider != "ollama":
+            raise ValueError(f"This client only supports Ollama. Got: {self.provider}")
+        self.base_url = settings.OLLAMA_BASE_URL
+        self.model = settings.OLLAMA_MODEL
+        self.client = httpx.AsyncClient()
     
-    async def generate_content(self, prompt: str) -> str:
-        """Generate content using the configured AI provider"""
+    async def generate_content(self, prompt: str, temperature: float = 0.7) -> str:
+        """Generate content using Ollama local model"""
         try:
-            if self.provider == "openai":
-                response = await openai.ChatCompletion.acreate(
-                    model=self.model,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=0.7
-                )
-                return response.choices[0].message.content
-            else:  # Google
-                response = await self.model.generate_content(prompt)
-                return response.text
-        except Exception as e:
-            raise Exception(f"Error generating content with {self.provider}: {str(e)}")
-    
-    def get_browser_agent(self, task: str) -> Agent:
-        """Get a configured browser agent with the appropriate LLM"""
-        if self.provider == "openai":
-            llm = ChatOpenAI(
-                model=self.model,
-                temperature=0.7,
-                streaming=True
+            response = await self.client.post(
+                f"{self.base_url}/api/generate",
+                json={
+                    "model": self.model,
+                    "prompt": prompt,
+                    "temperature": temperature,
+                    "stream": False,
+                },
+                timeout=300.0  # 5 minute timeout for generation
             )
-        else:  # Google
-            llm = ChatGoogle(model='gemini-pro')
-            
-        return Agent(
-            task=task,
-            llm=llm,
-            headless=settings.BROWSER_USE_HEADLESS
-        )
+            response.raise_for_status()
+            result = response.json()
+            return result.get("response", "")
+        except httpx.ConnectError:
+            raise Exception(f"Could not connect to Ollama at {self.base_url}. Make sure Ollama is running.")
+        except Exception as e:
+            raise Exception(f"Error generating content with Ollama: {str(e)}")
+    
+    async def generate_with_system_prompt(self, system_prompt: str, user_message: str, temperature: float = 0.3) -> str:
+        """Generate content with system prompt guidance"""
+        try:
+            combined_prompt = f"{system_prompt}\n\nUser: {user_message}\n\nAssistant:"
+            return await self.generate_content(combined_prompt, temperature)
+        except Exception as e:
+            raise Exception(f"Error generating content with Ollama: {str(e)}")
+    
+    def get_browser_agent(self, task: str):
+        """Get a configured browser agent with Ollama LLM"""
+        raise NotImplementedError("Browser automation with Ollama requires additional setup. Use generate_content instead.")
+    
+    async def close(self):
+        """Close the HTTP client"""
+        await self.client.aclose()
 
-# Global instance with default provider (OpenAI)
+# Global instance with Ollama
 ai_client = AIClient()
 
 def get_ai_client(provider: Optional[str] = None) -> AIClient:
-    """Get AI client instance with optional provider override"""
+    """Get AI client instance (Ollama only)"""
     global ai_client
-    if provider and provider.lower() != ai_client.provider:
-        ai_client = AIClient(provider)
+    if provider and provider.lower() != "ollama":
+        raise ValueError(f"Only Ollama provider is supported. Got: {provider}")
     return ai_client
 
 # Example usage:
 # async def example():
-#     client = get_ai_client()  # Gets OpenAI by default
+#     client = get_ai_client()  # Gets Ollama
 #     response = await client.generate_content("Your prompt here")
-#     
-#     # For Google:
-#     google_client = get_ai_client("google")
-#     google_response = await google_client.generate_content("Your prompt here")
-#     
-#     # For browser automation:
-#     agent = client.get_browser_agent("Your task here")
-#     await agent.run() 
+#     print(response)
+#     await client.close() 

@@ -20,14 +20,14 @@ class Settings(BaseSettings):
     # CORS
     BACKEND_CORS_ORIGINS: str = "http://localhost:3000"
     
-    # AI Configuration
-    OPENAI_API_KEY: str  # Default AI provider
-    GOOGLE_API_KEY: str  # Alternative AI provider
-    AI_PROVIDER: str = "openai"  # Default to OpenAI
+    # AI Configuration - Ollama
+    OLLAMA_BASE_URL: str = "http://localhost:11434"  # Ollama server URL
+    OLLAMA_MODEL: str = "phi"  # Default Ollama model (faster, 3B)
+    AI_PROVIDER: str = "ollama"  # Using Ollama
     
-    # Browser Automation
+    # Browser Automation with Ollama
     BROWSER_USE_HEADLESS: bool = False
-    BROWSER_USE_LLM_PROVIDER: str = "openai"  # Changed default to OpenAI
+    BROWSER_USE_LLM_PROVIDER: str = "ollama"  # Using Ollama for browser
     
     # File Upload
     UPLOAD_DIR: str = "uploads"
