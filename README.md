@@ -1,7 +1,7 @@
 # 🏛️ Lexpilot - AI-Powered Legal Compliance Platform
 
 <div align="center">
-  <img src="frontend/public/images/Lexpilot.png" alt="Lexpilot Logo" width="200" height="200" />
+  <img src="frontend/public/images/LegalEase.png" alt="Lexpilot Logo" width="200" height="200" />
   
   **Automate your legal workflows with AI. Draft contracts, track compliance, and handle payments - all in one platform built for Indian startups and SMEs.**
 
