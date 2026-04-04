@@ -1,7 +1,7 @@
-# 🏛️ LegalEase - AI-Powered Legal Compliance Platform
+# 🏛️ Lexpilot - AI-Powered Legal Compliance Platform
 
 <div align="center">
-  <img src="frontend/public/images/LEGALEASE.png" alt="LegalEase Logo" width="200" height="200" />
+  <img src="frontend/public/images/Lexpilot.png" alt="Lexpilot Logo" width="200" height="200" />
   
   **Automate your legal workflows with AI. Draft contracts, track compliance, and handle payments - all in one platform built for Indian startups and SMEs.**
 
@@ -14,7 +14,7 @@
 
 ## 🎯 Overview
 
-LegalEase is a comprehensive AI-powered legal compliance and business automation platform designed specifically for Indian startups and SMEs. It combines cutting-edge AI technology with legal expertise to automate complex business processes, from document generation to tax filing and compliance management.
+Lexpilot is a comprehensive AI-powered legal compliance and business automation platform designed specifically for Indian startups and SMEs. It combines cutting-edge AI technology with legal expertise to automate complex business processes, from document generation to tax filing and compliance management.
 
 ### ✨ Key Features
 
@@ -29,7 +29,7 @@ LegalEase is a comprehensive AI-powered legal compliance and business automation
 
 ## 🏗️ Architecture
 
-LegalEase is built with a modern microservices architecture:
+Lexpilot is built with a modern microservices architecture:
 
 ```
 Frontend (Next.js)  ←→  Backend (FastAPI)  ←→  Blockchain (Solidity)
@@ -53,8 +53,8 @@ Frontend (Next.js)  ←→  Backend (FastAPI)  ←→  Blockchain (Solidity)
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/legalease.git
-cd legalease
+git clone https://github.com/your-username/Lexpilot.git
+cd Lexpilot
 ```
 
 ### 2. Backend Setup
@@ -128,7 +128,7 @@ python app.py
 ```env
 # Database
 MONGODB_URL=mongodb+srv://your-mongodb-url
-MONGODB_DB_NAME=legalease
+MONGODB_DB_NAME=Lexpilot
 
 # AI Configuration
 OPENAI_API_KEY=your-openai-api-key
@@ -160,7 +160,7 @@ NEXT_PUBLIC_BASE_SEPOLIA_RPC=https://sepolia.base.org
 
 ### 🤖 AI Agents
 
-LegalEase includes specialized AI agents for different legal and accounting tasks:
+Lexpilot includes specialized AI agents for different legal and accounting tasks:
 
 | Agent | Description | Capabilities |
 |-------|-------------|-------------|
@@ -234,7 +234,7 @@ For complete API documentation, visit: `http://localhost:8000/docs` (Swagger UI)
 
 ## 🔗 Blockchain Integration
 
-LegalEase integrates with the Base blockchain for document notarization:
+Lexpilot integrates with the Base blockchain for document notarization:
 
 ### Smart Contract Features
 
@@ -246,7 +246,7 @@ LegalEase integrates with the Base blockchain for document notarization:
 ### Contract Details
 
 - **Network**: Base Sepolia Testnet (Chain ID: 84532)
-- **Contract**: `LegalEaseDocRegistry.sol`
+- **Contract**: `LexpilotDocRegistry.sol`
 - **Features**: Gas-optimized, duplicate prevention, event-based verification
 
 ## 📱 Frontend Pages
@@ -270,7 +270,7 @@ LegalEase integrates with the Base blockchain for document notarization:
 
 ## 🎨 Design System
 
-LegalEase uses a professional legal theme with:
+Lexpilot uses a professional legal theme with:
 
 - **Color Palette**: Legal brown (`#8B4513`) and warm cream (`#F8F3EE`)
 - **Typography**: Baskervville (headings) and Montserrat (body)
@@ -369,8 +369,8 @@ We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md) 
 
 ```bash
 # Fork the repository
-git clone https://github.com/your-username/legalease.git
-cd legalease
+git clone https://github.com/your-username/Lexpilot.git
+cd Lexpilot
 
 # Create feature branch
 git checkout -b feature/your-feature-name
@@ -389,20 +389,20 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 ### Getting Help
 
 - **Documentation**: Check our comprehensive guides
-- **Issues**: Report bugs on [GitHub Issues](https://github.com/your-username/legalease/issues)
-- **Discussions**: Join our [GitHub Discussions](https://github.com/your-username/legalease/discussions)
-- **Email**: Contact us at support@legalease.com
+- **Issues**: Report bugs on [GitHub Issues](https://github.com/your-username/Lexpilot/issues)
+- **Discussions**: Join our [GitHub Discussions](https://github.com/your-username/Lexpilot/discussions)
+- **Email**: Contact us at support@Lexpilot.com
 
 ### FAQ
 
-**Q: Is LegalEase free to use?**
-A: LegalEase offers both free and premium plans. The free plan includes basic features, while premium plans unlock advanced AI capabilities and higher usage limits.
+**Q: Is Lexpilot free to use?**
+A: Lexpilot offers both free and premium plans. The free plan includes basic features, while premium plans unlock advanced AI capabilities and higher usage limits.
 
 **Q: Is my data secure?**
 A: Yes, we use enterprise-grade encryption and follow strict data privacy regulations including GDPR and CCPA. Your documents are encrypted and never shared with third parties.
 
-**Q: Can I integrate LegalEase with other tools?**
-A: Yes, LegalEase provides APIs for integration with popular tools like Google Workspace, Microsoft 365, and Slack.
+**Q: Can I integrate Lexpilot with other tools?**
+A: Yes, Lexpilot provides APIs for integration with popular tools like Google Workspace, Microsoft 365, and Slack.
 
 ## 🎉 Acknowledgments
 
@@ -414,8 +414,4 @@ A: Yes, LegalEase provides APIs for integration with popular tools like Google W
 
 ---
 
-<div align="center">
-  <strong>Built with ❤️ for Indian startups and SMEs</strong> by Team AlphaQ
-  
-  [Website](https://legalease.com) • [Documentation](https://docs.legalease.com) • [API](https://api.legalease.com) • [Status](https://status.legalease.com)
-</div> 
+
