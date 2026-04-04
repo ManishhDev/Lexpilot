@@ -118,27 +118,27 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 legal-bg-primary backdrop-blur-sm border-b border-legal-border transition-colors duration-300">
-      <div className="container mx-auto px-4 py-3">
-        <div className="flex items-center justify-between">
+    <header className="sticky top-0 z-50 legal-bg-primary backdrop-blur-sm border-b border-legal-border transition-colors duration-300" suppressHydrationWarning>
+      <div className="container mx-auto px-4 py-3" suppressHydrationWarning>
+        <div className="flex items-center justify-between" suppressHydrationWarning>
           {/* Logo */}
           <Link
             href={user ? "/dashboard" : "/"}
             className="flex items-center space-x-2"
           >
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center -mr-1">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center -mr-1" suppressHydrationWarning>
               <Image src="/logo.png" alt="LegalEase" width={32} height={32} />
             </div>
             <span className="text-xl font-bold text-legal-brown">
-              <span className="text-black">Legal</span>
-              <span className="text-legal-brown">Ease</span>
+              <span className="text-black">Lex</span>
+              <span className="text-legal-brown">pilot</span>
             </span>
           </Link>
 
           {/* Desktop Navigation */}
           {user && pathname !== "/onboarding" ? (
             // Authenticated User Navigation
-            <nav className="hidden lg:flex items-center space-x-1">
+            <nav className="hidden lg:flex items-center space-x-1" suppressHydrationWarning>
               {authenticatedNavItems.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -161,7 +161,7 @@ export default function Header() {
             </nav>
           ) : !user ? (
             // Public Navigation
-            <nav className="hidden md:flex items-center space-x-8">
+            <nav className="hidden md:flex items-center space-x-8" suppressHydrationWarning>
               {publicNavItems.map((item) => (
                 <Link
                   key={item.name}
@@ -180,7 +180,7 @@ export default function Header() {
           ) : null}
 
           {/* Right Side Actions */}
-          <div className="hidden md:flex items-center space-x-3">
+          <div className="hidden md:flex items-center space-x-3" suppressHydrationWarning>
             {user ? (
               // User Menu
               <DropdownMenu>
@@ -262,7 +262,7 @@ export default function Header() {
               </DropdownMenu>
             ) : (
               // Login/Signup Buttons
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-3" suppressHydrationWarning>
                 {/* <Button
                   variant="ghost"
                   asChild
@@ -282,7 +282,7 @@ export default function Header() {
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center space-x-2">
+          <div className="md:hidden flex items-center space-x-2" suppressHydrationWarning>
             <button
               className="text-legal-warm-text p-2"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -298,8 +298,8 @@ export default function Header() {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden mt-4 pb-4 border-t border-legal-border">
-            <nav className="flex flex-col space-y-2 mt-4">
+          <div className="md:hidden mt-4 pb-4 border-t border-legal-border" suppressHydrationWarning>
+            <nav className="flex flex-col space-y-2 mt-4" suppressHydrationWarning>
               {user ? (
                 // Mobile Authenticated Navigation
                 <>

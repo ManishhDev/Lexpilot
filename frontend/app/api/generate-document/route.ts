@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialize OpenAI client - only when API is actually used
+let openaiClient: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!openaiClient) {
+    openaiClient = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openaiClient;
+}
 
 const SYSTEM_PROMPTS = {
   'employment-contract': `You are a skilled legal document expert specializing in employment contracts. Based on the provided business context and natural language description, create a comprehensive, legally sound employment contract.
@@ -265,7 +273,7 @@ export async function POST(request: NextRequest) {
     }
 
     // STEP 1: Analyze user prompt to extract structured data
-    const analysisCompletion = await openai.chat.completions.create({
+    const analysisCompletion = await getOpenAIClient().chat.completions.create({
       model: "gpt-4",
       messages: [
         { role: "system", content: ANALYSIS_PROMPT },
@@ -302,7 +310,7 @@ ${specificRequest}
 
 Please create a professional, legally compliant document that incorporates all the specific details mentioned by the user and utilizes the business context provided.`;
 
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAIClient().chat.completions.create({
       model: "gpt-4",
       messages: [
         { role: "system", content: enhancedSystemPrompt },

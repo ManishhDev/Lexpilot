@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import {
   Bold,
   Italic,
@@ -121,6 +122,7 @@ Type @ to see available commands:
   const [blockchainHash, setBlockchainHash] = useState<string | null>(null);
   const [agentOutput, setAgentOutput] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showNewDialog, setShowNewDialog] = useState(false);
   const editorRef = useRef<HTMLTextAreaElement>(null);
 
   // Calculate word count
@@ -129,7 +131,42 @@ Type @ to see available commands:
     setWordCount(words.length);
   }, [editorContent]);
 
-  // Get placeholder text for different commands
+  // Helper function to render markdown to safe HTML
+  const renderMarkdown = (content: string) => {
+    // Escape HTML special characters first
+    let html = content
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+    
+    // Then apply markdown transformations
+    html = html
+      // Headers (must be before other replacements)
+      .replace(/^### (.*$)/gim, '<h3 class="text-lg font-medium text-[#8B4513] mb-2 mt-4">$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2 class="text-xl font-semibold text-[#8B4513] mb-3 mt-6">$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold text-[#8B4513] mb-4 border-b border-[#D1C4B8] pb-2">$1</h1>')
+      // Code blocks (must be before inline code)
+      .replace(/```([\s\S]*?)```/g, '<pre class="bg-[#F8F3EE] p-3 rounded border border-[#D1C4B8] my-3 overflow-x-auto"><code class="text-sm font-mono text-[#8B4513]">$1</code></pre>')
+      .replace(/`([^`]+)`/g, '<code class="bg-[#F8F3EE] px-1 py-0.5 rounded text-sm font-mono text-[#8B4513]">$1</code>')
+      // Bold and Italic
+      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
+      // Links
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-[#8B4513] underline hover:text-[#6B3410]" target="_blank" rel="noopener noreferrer">$1</a>')
+      // Blockquotes
+      .replace(/^> (.*$)/gim, '<blockquote class="border-l-4 border-[#8B4513] pl-4 my-3 italic text-[#8B7355]">$1</blockquote>')
+      // Lists - unordered
+      .replace(/^- (.*$)/gim, '<li class="ml-4 mb-1 flex items-start"><span class="mr-2 text-[#8B4513]">•</span>$1</li>')
+      // Lists - ordered
+      .replace(/^\d+\. (.*$)/gim, '<li class="ml-4 mb-1">$1</li>')
+      // Line breaks (handle double newlines first)
+      .replace(/\n\n/g, '<br><br>')
+      .replace(/\n/g, '<br>');
+    
+    return html;
+  };
   const getPlaceholderText = (command?: string) => {
     switch (command) {
       case '@Generate Employment Contract':
@@ -175,11 +212,11 @@ The AI will extract: business name, review period, compliance areas, business ty
   };
 
   // Insert command into editor and show prompt dialog
-  const insertCommand = (command: any) => {
-    const newContent = editorContent.replace(/@$/, command.command);
+  const insertCommand = (cmd: any) => {
+    const newContent = editorContent.replace(/@$/, cmd.command);
     setEditorContent(newContent);
     setShowCommandPalette(false);
-    setSelectedCommand(command);
+    setSelectedCommand(cmd);
     setUserPrompt("");
     setShowPromptDialog(true);
   };
@@ -261,21 +298,94 @@ The AI will extract: business name, review period, compliance areas, business ty
     setEditorContent(newContent);
   };
 
-  // Save document
+  // Save document to localStorage
   const saveDocument = () => {
-    setLastSaved(new Date());
-    setAgentStatus("saved");
+    try {
+      localStorage.setItem('legalease_document', editorContent);
+      setLastSaved(new Date());
+      setAgentStatus("saved");
+      // Show success message briefly
+      setTimeout(() => {
+        setAgentStatus("idle");
+      }, 3000);
+    } catch (error) {
+      console.error('Failed to save document:', error);
+      setError("Failed to save document");
+    }
   };
 
-  // Download document
-  const downloadDocument = () => {
-    const element = document.createElement('a');
-    const file = new Blob([editorContent], { type: 'text/markdown' });
-    element.href = URL.createObjectURL(file);
-    element.download = 'legal-document.md';
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+  // Download document as PDF
+  const downloadDocument = async () => {
+    try {
+      // Only run on client-side
+      if (typeof window === 'undefined') {
+        setError("PDF generation is only available in the browser");
+        return;
+      }
+
+      setIsProcessing(true);
+      
+      // Load html2pdf from CDN if not already loaded
+      if (typeof window !== 'undefined' && !(window as any).html2pdf) {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+        script.onload = () => {
+          generatePDF();
+        };
+        script.onerror = () => {
+          setError("Failed to load PDF generation library");
+          setIsProcessing(false);
+        };
+        document.head.appendChild(script);
+      } else {
+        generatePDF();
+      }
+
+      const generatePDF = () => {
+        try {
+          // Create a temporary div to render the markdown
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = renderMarkdown(editorContent);
+          tempDiv.style.padding = '20px';
+          tempDiv.style.backgroundColor = 'white';
+          tempDiv.style.color = '#2A2A2A';
+          tempDiv.style.fontFamily = 'Montserrat, sans-serif';
+          
+          // Configure PDF options
+          const options = {
+            margin: 10,
+            filename: 'legal-document.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+          };
+
+          // Generate PDF using the loaded library
+          const html2pdf = (window as any).html2pdf;
+          if (html2pdf) {
+            html2pdf().set(options).from(tempDiv).save();
+            setAgentStatus("idle");
+          } else {
+            setError("PDF generation library not available");
+            setAgentStatus("error");
+          }
+        } catch (error) {
+          console.error('Failed to generate PDF:', error);
+          setError("Failed to generate PDF export");
+          setAgentStatus("error");
+        } finally {
+          setIsProcessing(false);
+        }
+      };
+    } catch (error) {
+      console.error('Failed to generate PDF:', error);
+      setError("Failed to generate PDF export");
+      setAgentStatus("error");
+      setTimeout(() => {
+        setAgentStatus("idle");
+        setError(null);
+      }, 3000);
+    }
   };
 
   // Keyboard shortcuts
@@ -308,60 +418,7 @@ The AI will extract: business name, review period, compliance areas, business ty
               variant="outline"
               size="sm"
               className="border-[#8B4513] text-[#8B4513] hover:bg-[#8B4513] hover:text-white"
-              onClick={() => {
-                setEditorContent(`# Legal Document Draft
-
-Welcome to the LegalEase AI Editor. Use @commands to generate legal documents automatically based on the business context below.
-
-## Business Profile & Operational History
-
-**Company Name:** Ashok Enterprises PRIVATE LIMITED  
-**CIN:** U72200KA2024PTC987654  
-**Date of Incorporation:** 15 April 2024  
-**Business Category:** Private Limited Company, Non-Government  
-**Registered Office:** #42, 3rd Floor, Innov8 Tower, 123 Silicon Avenue, Electronics City II, Bengaluru – 560100  
-**Email ID:** compliance@ashokeneterprises.in  
-**Authorised Capital:** ₹10,00,000  
-**Paid-up Capital:** ₹5,00,000  
-**Nature of Business:** Research and Development in physical and engineering sciences (NIC Code: 72200)
-
-Ashok Enterprises PRIVATE LIMITED was founded in April 2024 by two technocrats, **Rahul Narayan** and **Priya Sharma**, with the vision to provide specialized R&D services in industrial automation, robotics, and control systems. From its inception, the company has focused on high-value engineering development and B2B consulting for manufacturing clients.
-
-The business commenced operations shortly after incorporation, receiving its Certificate of Commencement of Business on 21 April 2024. The company operates from its technology office in Bengaluru and maintains its primary current account with ICICI Bank.
-
-**Shareholding Structure:**
-- Rahul Narayan: 60% (30,000 shares) - DIN: 09876543
-- Priya Sharma: 40% (20,000 shares) - DIN: 09876544
-
-## Tax & Compliance Summary
-
-**Financial Year 2024–25 (Assessment Year 2025–26):**
-- Gross Turnover: ₹3.82 Crores
-- Total Taxable Income: ₹1.06 Crores
-- Tax Payable: ₹28.04 Lakhs
-- GST Registration: Active from 20 April 2024
-- All TDS Statements (24Q & 26Q) filed without defaults
-
-**HSN Classification:**
-- 84795000 – Industrial Robots
-- 85176290 – Control Units
-
-## Available AI Commands
-
-Type @ to see available commands:
-
-- **@Generate Employment Contract** - Create comprehensive employment contracts
-- **@File GST Return** - Generate GST return documentation
-- **@Draft Legal Notice** - Create formal legal notices
-- **@Check Compliance Status** - Verify regulatory compliance
-
-*The AI will automatically use the business information above to generate professional, legally compliant documents.*`);
-                setAgentOutput(null);
-                setBlockchainHash(null);
-                setGeneratedDocument(null);
-                setError(null);
-                setAgentStatus("idle");
-              }}
+              onClick={() => setShowNewDialog(true)}
             >
               <Plus className="w-4 h-4 mr-2" />
               New
@@ -516,10 +573,100 @@ Type @ to see available commands:
         </DialogContent>
       </Dialog>
 
+      {/* New Document Confirmation Dialog */}
+      <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>
+        <DialogContent className="sm:max-w-[400px] bg-white">
+          <DialogHeader>
+            <DialogTitle className="text-[#8B4513] flex items-center">
+              <Plus className="w-5 h-5 mr-2" />
+              Create New Document
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-[#8B7355]">
+              This will reset your editor to a blank document. Your current work will be lost unless you save it first.
+            </p>
+            <p className="text-sm font-medium text-[#2A2A2A]">
+              Do you want to continue?
+            </p>
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowNewDialog(false)}
+                className="border-[#8B4513] text-[#8B4513]"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  const defaultContent = `# Legal Document Draft
+
+Welcome to the LegalEase AI Editor. Use @commands to generate legal documents automatically based on the business context below.
+
+## Business Profile & Operational History
+
+**Company Name:** Ashok Enterprises PRIVATE LIMITED  
+**CIN:** U72200KA2024PTC987654  
+**Date of Incorporation:** 15 April 2024  
+**Business Category:** Private Limited Company, Non-Government  
+**Registered Office:** #42, 3rd Floor, Innov8 Tower, 123 Silicon Avenue, Electronics City II, Bengaluru – 560100  
+**Email ID:** compliance@ashokeneterprises.in  
+**Authorised Capital:** ₹10,00,000  
+**Paid-up Capital:** ₹5,00,000  
+**Nature of Business:** Research and Development in physical and engineering sciences (NIC Code: 72200)
+
+Ashok Enterprises PRIVATE LIMITED was founded in April 2024 by two technocrats, **Rahul Narayan** and **Priya Sharma**, with the vision to provide specialized R&D services in industrial automation, robotics, and control systems. From its inception, the company has focused on high-value engineering development and B2B consulting for manufacturing clients.
+
+The business commenced operations shortly after incorporation, receiving its Certificate of Commencement of Business on 21 April 2024. The company operates from its technology office in Bengaluru and maintains its primary current account with ICICI Bank.
+
+**Shareholding Structure:**
+- Rahul Narayan: 60% (30,000 shares) - DIN: 09876543
+- Priya Sharma: 40% (20,000 shares) - DIN: 09876544
+
+## Tax & Compliance Summary
+
+**Financial Year 2024–25 (Assessment Year 2025–26):**
+- Gross Turnover: ₹3.82 Crores
+- Total Taxable Income: ₹1.06 Crores
+- Tax Payable: ₹28.04 Lakhs
+- GST Registration: Active from 20 April 2024
+- All TDS Statements (24Q & 26Q) filed without defaults
+
+**HSN Classification:**
+- 84795000 – Industrial Robots
+- 85176290 – Control Units
+
+## Available AI Commands
+
+Type @ to see available commands:
+
+- **@Generate Employment Contract** - Create comprehensive employment contracts
+- **@File GST Return** - Generate GST return documentation
+- **@Draft Legal Notice** - Create formal legal notices
+- **@Check Compliance Status** - Verify regulatory compliance
+
+*The AI will automatically use the business information above to generate professional, legally compliant documents.*`;
+                  setEditorContent(defaultContent);
+                  setAgentOutput(null);
+                  setBlockchainHash(null);
+                  setGeneratedDocument(null);
+                  setError(null);
+                  setAgentStatus("idle");
+                  setShowNewDialog(false);
+                }}
+                className="bg-[#8B4513] hover:bg-[#6B3410] text-white"
+              >
+                Create New
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Main Editor Area */}
-      <div className="flex h-[calc(100vh-120px)]">
-        {/* Left Pane - Editor (60%) */}
-        <div className="w-[60%] bg-white border-r border-[#D1C4B8]">
+      <ResizablePanelGroup direction="horizontal" className="h-[calc(100vh-120px)]">
+        {/* Left Pane - Editor */}
+        <ResizablePanel defaultSize={60} minSize={30} className="bg-white">
           <div className="h-full flex flex-col">
             {/* Editor Header */}
             <div className="flex items-center justify-between px-4 py-2 bg-[#F8F3EE] border-b border-[#D1C4B8]">
@@ -607,10 +754,13 @@ Type @ to see available commands:
               )}
             </div>
           </div>
-        </div>
+        </ResizablePanel>
 
-        {/* Right Pane - Preview (40%) */}
-        <div className="w-[40%] bg-[#F8F3EE]">
+        {/* Resizable Handle */}
+        <ResizableHandle withHandle className="bg-[#D1C4B8]" />
+
+        {/* Right Pane - Preview */}
+        <ResizablePanel defaultSize={40} minSize={20} className="bg-[#F8F3EE]">
           <div className="h-full flex flex-col">
             {/* Preview Header */}
             <div className="flex items-center justify-between px-4 py-2 bg-[#E8DDD1] border-b border-[#D1C4B8]">
@@ -629,39 +779,12 @@ Type @ to see available commands:
             <div className="flex-1 p-4 overflow-y-auto">
               <Card className="bg-white border-[#D1C4B8] shadow-sm">
                 <CardContent className="p-6">
-                  <div className="prose prose-sm max-w-none">
-                    <div
-                      className="text-[#2A2A2A] leading-relaxed"
-                      dangerouslySetInnerHTML={{
-                        __html: editorContent
-                          // Headers
-                          .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold text-[#8B4513] mb-4 border-b border-[#D1C4B8] pb-2">$1</h1>')
-                          .replace(/^## (.*$)/gim, '<h2 class="text-xl font-semibold text-[#8B4513] mb-3 mt-6">$1</h2>')
-                          .replace(/^### (.*$)/gim, '<h3 class="text-lg font-medium text-[#8B4513] mb-2 mt-4">$1</h3>')
-                          .replace(/^#### (.*$)/gim, '<h4 class="text-base font-medium text-[#8B4513] mb-2 mt-3">$1</h4>')
-                          // Bold and Italic
-                          .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
-                          .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
-                          // Code blocks
-                          .replace(/```([\s\S]*?)```/g, '<pre class="bg-[#F8F3EE] p-3 rounded border border-[#D1C4B8] my-3 overflow-x-auto"><code class="text-sm font-mono text-[#8B4513]">$1</code></pre>')
-                          .replace(/`([^`]+)`/g, '<code class="bg-[#F8F3EE] px-1 py-0.5 rounded text-sm font-mono text-[#8B4513]">$1</code>')
-                          // Lists
-                          .replace(/^- (.*$)/gim, '<li class="ml-4 mb-1 flex items-start"><span class="mr-2 text-[#8B4513]">•</span>$1</li>')
-                          .replace(/^\d+\. (.*$)/gim, '<li class="ml-4 mb-1">$1</li>')
-                          // Links
-                          .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-[#8B4513] underline hover:text-[#6B3410]">$1</a>')
-                          // Blockquotes
-                          .replace(/^> (.*$)/gim, '<blockquote class="border-l-4 border-[#8B4513] pl-4 my-3 italic text-[#8B7355]">$1</blockquote>')
-                          // Tables
-                          .replace(/\|(.+)\|/g, '<tr>$1</tr>')
-                          .replace(/\|/g, '<td class="border border-[#D1C4B8] px-3 py-2">')
-                          .replace(/<tr><td class="border border-\[#D1C4B8\] px-3 py-2">(.+)<\/td>/g, '<tr><th class="border border-[#D1C4B8] px-3 py-2 bg-[#F8F3EE] font-semibold">$1</th>')
-                          // Line breaks
-                          .replace(/\n\n/g, '<br><br>')
-                          .replace(/\n/g, '<br>')
-                      }}
-                    />
-                  </div>
+                  <div
+                    className="text-sm text-[#2A2A2A] leading-relaxed space-y-2"
+                    dangerouslySetInnerHTML={{
+                      __html: renderMarkdown(editorContent)
+                    }}
+                  />
                 </CardContent>
               </Card>
 
@@ -747,8 +870,8 @@ Type @ to see available commands:
               )}
             </div>
           </div>
-        </div>
-      </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
 
       {/* Bottom Status Bar */}
       <div className="bg-white border-t border-[#D1C4B8] px-6 py-2">

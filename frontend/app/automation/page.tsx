@@ -644,22 +644,25 @@ export default function AutomationsPage() {
         setAutomationStatus(prev => ({ ...prev, status: 'disconnected' }))
         
         if (event.code !== 1000) { // Not a normal closure
-          addMessage('system', 'Connection lost. Attempting to reconnect...', 'error')
-          attemptReconnect()
+          addMessage('system', 'Connection lost. Using fallback mode...', 'info')
+          // Fall back to polling mode
+          setIsConnecting(false)
         }
       }
 
       wsRef.current.onerror = (error) => {
-        console.error('WebSocket error:', error)
-        addMessage('system', 'Connection error occurred', 'error')
-        setAutomationStatus(prev => ({ ...prev, status: 'error', error: { message: 'Connection error', type: 'connection', recoverable: true, timestamp: new Date() } }))
+        console.debug('WebSocket error - using fallback polling mode')
+        setIsConnected(false)
         setIsConnecting(false)
+        setAutomationStatus({ status: 'fallback', error: { message: 'Using polling mode', type: 'connection', recoverable: true, timestamp: new Date() } })
+        addMessage('system', 'Real-time connection unavailable - using polling mode', 'info')
       }
     } catch (error) {
-      console.error('Failed to create WebSocket:', error)
-      addMessage('system', 'Failed to connect to automation service', 'error')
+      console.debug('Failed to create WebSocket:', error)
+      setIsConnected(false)
       setIsConnecting(false)
-      attemptReconnect()
+      setAutomationStatus({ status: 'fallback' })
+      addMessage('system', 'Real-time connection unavailable - using polling mode', 'info')
     }
   }, [addMessage, handleWebSocketMessage, attemptReconnect])
 

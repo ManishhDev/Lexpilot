@@ -9,7 +9,7 @@ import Footer from "@/components/footer"
 
 export default function Home() {
   return (
-    <div className="min-h-screen legal-bg-primary">
+    <div className="min-h-screen legal-bg-primary" suppressHydrationWarning>
       <HeroSection />
       <FeaturesSection />
       <ProblemSection />

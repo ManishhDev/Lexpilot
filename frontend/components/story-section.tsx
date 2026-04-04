@@ -33,7 +33,7 @@ const defaultBenefits: BenefitItem[] = [
   },
 ];
 
-const BenefitsCard: React.FC<BenefitsCardProps> = ({
+const StorySection: React.FC<BenefitsCardProps> = ({
   title = "WHAT BENEFITS WILL YOU GET FROM US?",
   subtitle = "We provide high quality law service for you with best integrated people.",
   benefits = defaultBenefits,
@@ -107,4 +107,4 @@ const BenefitsCard: React.FC<BenefitsCardProps> = ({
   );
 };
 
-export default BenefitsCard;
+export default StorySection;

@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-export default function ContactSection() {
+export default function Footer() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -169,6 +169,7 @@ export default function ContactSection() {
                         className="w-full pl-10 pr-4 py-3 border border-amber-200 -lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                         placeholder="Enter your email"
                         required
+                        suppressHydrationWarning
                       />
                     </div>
                   </div>
@@ -189,6 +190,7 @@ export default function ContactSection() {
                         className="w-full pl-10 pr-4 py-3 border border-amber-200 -lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                         placeholder="Enter your phone number"
                         required
+                        suppressHydrationWarning
                       />
                     </div>
                   </div>
@@ -203,6 +205,7 @@ export default function ContactSection() {
                       onChange={handleInputChange}
                       className="w-full px-4 py-3 border border-amber-200 -lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                       required
+                      suppressHydrationWarning
                     >
                       <option value="">Select a service</option>
                       <option value="legal-consultation">
@@ -236,6 +239,7 @@ export default function ContactSection() {
                       className="w-full pl-10 pr-4 py-3 border border-amber-200 -lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
                       placeholder="Tell us about your requirements..."
                       required
+                      suppressHydrationWarning
                     />
                   </div>
                 </div>
@@ -284,14 +288,6 @@ export default function ContactSection() {
           >
             Contacts
           </Link>
-        </div>
-        <div className="text-center space-y-2">
-          <p className="text-[#8B7355] text-sm">
-            © 2025 Designed by Team AlphaQ
-          </p>
-          <p className="text-[#8B7355] text-sm">
-            Powered by Jazzee Technologies
-          </p>
         </div>
       </div>
     </div>

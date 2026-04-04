@@ -387,15 +387,15 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F3EE] flex">
+    <div className="min-h-screen bg-[#F8F3EE] flex" suppressHydrationWarning>
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col" suppressHydrationWarning>
         {/* Header */}
-        <div className="bg-white border-b border-[#D1C4B8] px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-[#8B4513]/10 rounded-lg flex items-center justify-center">
+        <div className="bg-white border-b border-[#D1C4B8] px-6 py-4" suppressHydrationWarning>
+          <div className="flex items-center justify-between" suppressHydrationWarning>
+            <div className="flex items-center space-x-4" suppressHydrationWarning>
+              <div className="flex items-center space-x-3" suppressHydrationWarning>
+                <div className="w-10 h-10 bg-[#8B4513]/10 rounded-lg flex items-center justify-center" suppressHydrationWarning>
                   <selectedAgent.icon className="w-5 h-5 text-[#8B4513]" />
                 </div>
                 <div>
@@ -414,7 +414,7 @@ export default function ChatPage() {
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2" suppressHydrationWarning>
               <Button
                 variant="outline"
                 size="sm"
@@ -436,7 +436,7 @@ export default function ChatPage() {
         </div>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden" suppressHydrationWarning>
           <ScrollArea className="h-full px-6 py-4">
             <div className="space-y-4 max-w-4xl mx-auto">
               {messages.map((message) => (
@@ -567,11 +567,11 @@ export default function ChatPage() {
         </div>
 
         {/* Input Area */}
-        <div className="bg-white border-t border-[#D1C4B8] p-4">
-          <div className="max-w-4xl mx-auto">
+        <div className="bg-white border-t border-[#D1C4B8] p-4" suppressHydrationWarning>
+          <div className="max-w-4xl mx-auto" suppressHydrationWarning>
             {/* Input Bar */}
-            <div className="flex items-end space-x-3">
-              <div className="flex-1 relative">
+            <div className="flex items-end space-x-3" suppressHydrationWarning>
+              <div className="flex-1 relative" suppressHydrationWarning>
                 <Textarea
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}

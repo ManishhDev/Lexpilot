@@ -7,7 +7,6 @@ import Image from "next/image";
 import TrueFocus from "@/app/components/TrueFocus/TrueFocus";
 import { Baskervville, Montserrat } from "next/font/google";
 import { cn } from "@/lib/utils";
-import TextRotate from "@/fancy/components/text/text-rotate";
 import { FlipWords } from "./ui/flip-words";
 
 const baskervville = Baskervville({
